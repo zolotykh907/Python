@@ -1,7 +1,6 @@
 import os
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 
 def task1():
     n=0
@@ -57,5 +56,5 @@ def task2():
     cv2.destroyWindow('Frame')
     cap.release()
 
-task2()
+task1()
 
