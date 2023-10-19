@@ -28,7 +28,7 @@ def task1():
         image_out = nail.copy()
         image_out = cv2.drawContours(image_out, contours, -1, (0, 255, 0), 2)
 
-        result = cv2.hconcat([maska, image_out])
+        result = cv2.hconcat([nail, image_out, maska])
         cv2.imshow('Result', result)
 
     f(n)

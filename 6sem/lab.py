@@ -49,13 +49,13 @@ def lab():
 
     start_time = time.time()
     n=0
-
+    t=5
     while True:
-        key = cv2.waitKey(30) & 0xff
+        key = cv2.waitKey(1) & 0xff
 
         cur_time = time.time() - start_time
 
-        if cur_time < 10 and n%2 == 0:
+        if cur_time < t and n%2 == 0:
             frame1_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
             frame2_gray = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
@@ -79,10 +79,13 @@ def lab():
             thickness = 2
 
             for i in contours:
-                if cv2.contourArea(i) > 1000:
-                    x, y, w, h = cv2.boundingRect(i)
-                    cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 0, 255), 5)
+                if cv2.contourArea(i) > 100:
+                    #x, y, w, h = cv2.boundingRect(i)
+                    #cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 0, 255), 5)
+                    frame1 = cv2.drawContours(frame1, contours, -1, (0, 255, 0), 2)
                     res[:] = (0, 0, 255)
+
+
 
         frame1 = cv2.putText(frame1, '"Red light" - motion detected', (10, 30), font, fontScale, (0,0,255), thickness, cv2.LINE_AA)
         cv2.imshow('Frame', frame1)
@@ -91,16 +94,18 @@ def lab():
         frame1 = frame2
         ret, frame2 = cam.read()
 
-        if cur_time < 10 and n % 2 == 1:
+        if cur_time < t and n % 2 == 1:
             res[:] = (0, 255, 0)
             frame1 = cv2.putText(frame1, '"Green light" - no movement detected.', (10, 30), font, fontScale, (0,255,0),
                                  thickness, cv2.LINE_AA)
-            #result = cv2.hconcat([frame1, res])
+            # result = cv2.hconcat([frame1, res])
+
+            # print(frame1.shape, res)
             cv2.imshow('Frame', frame1)
             cv2.imshow('Result', res)
             #cv2.imshow('Result', result)
 
-        if cur_time >= 10:
+        if cur_time >= t:
             n += 1
             n = n%2
             start_time = time.time()
