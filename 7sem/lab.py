@@ -18,8 +18,7 @@ def search_point(img1, img2):
     matches = matcher.match(queryDes, trainDes)
     matches = sorted(matches, key=lambda x: x.distance)
 
-
-    final_img = cv2.drawMatches(img1, queryKP, img2, trainKP, matches[:100], None)
+    #final_img = cv2.drawMatches(img1, queryKP, img2, trainKP, matches[:100], None)
 
     good_matches = matches
 
@@ -51,10 +50,8 @@ def search_contours(img):
     im = cv2.GaussianBlur(im, (25,25), 0)
     _, thresh = cv2.threshold(im, 190, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    res = img.copy()
 
     arr = []
-
     for i in contours:
         if cv2.contourArea(i)>1100:
             arr.append(i)
@@ -79,40 +76,50 @@ def search_contours(img):
             buf.append(i)
 
     res_arr = []
-    count=0
+
     for i in buf:
         if cv2.contourArea(i)<37000:
             x, y, w, h = cv2.boundingRect(i)
-            res_arr.append([count, (x,y,w,h)])
-            count+=1
+            res_arr.append((x,y,w,h))
             #cv2.rectangle(res, (x, y), (x + w, y + h), (0, 0, 255), 5)
             arr.append(i)
 
-    return res, res_arr
+    return res_arr
 
 def f(arr):
-    x,y,w,h = arr[3][1]
+    x,y,w,h = arr
     result = phone[y-20:y+h+20, x-20:x+w+20]
-    plt.imshow(result)
-    plt.show()
+    # plt.imshow(result)
+    # plt.show()
     return result
 
+def g(p,s,c):
+    if p>s and p>c:
+        return 'p'
+    if s>c and s>p:
+        return 's'
+    if c>s and c>p:
+        return 'c'
 
-img, arr = search_contours(phone)
+def task():
+    arr = search_contours(phone)
+    img = phone.copy()
 
-#
-# f(arr)
-b=f(arr)
+    res = {'p':(0, 255, 255), 's':(0, 0, 255), 'c':(0, 255, 0)}
 
-p = search_point(pg, b)
-s = search_point(sg, b)
-c = search_point(cg, b)
-if s>p:
-    x,y,w,h = arr[3][1]
-    cv2.rectangle(img, (x-20, y-20), (x + w+20, y + h), (0, 235, 255), 5)
+    for i in range(len(arr)):
+        crop=f(arr[i])
+        p = search_point(pg, crop)
+        s = search_point(sg, crop)
+        c = search_point(cg, crop)
 
-img = cv2.resize(img, (1280, 720))
-cv2.imshow('g', img)
+        x, y, w, h = arr[i]
+        color = res[g(p,s,c)]
+        img = cv2.rectangle(img, (x - 20, y - 20), (x + w + 20, y + h), color, 3)
 
-while True:
+    img = cv2.resize(img[:,:,::-1], (1280, 720))
+    cv2.imshow('Ghosts on picture', img)
+
     cv2.waitKey(0)
+
+task()

@@ -67,7 +67,7 @@ def task(length):
 
   n, l = generator(length, nails)
   for i in range(length):
-    n[i] = cv2.resize(n[i], dsize=(640,480))
+    n[i] = cv2.resize(n[i], dsize=(640, 480))
     l[i] = cv2.resize(l[i], dsize=(640, 480))
     result = cv2.hconcat([n[i],l[i]])
     cv2.imshow('Result', result)
@@ -75,7 +75,7 @@ def task(length):
     if key == 32:
       continue
 
-l=3
+l=5
 task(l)
 
 while True:
