@@ -5,138 +5,114 @@ import matplotlib.pyplot as plt
 import datetime
 import time
 
-# def find_counturs(img):
-#   img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-#   T, thresh_img = cv2.threshold(img_gray, 70, 255, cv2.THRESH_BINARY)
-#   cnts, _ = cv2.findContours(thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-#   image_out = np.zeros_like(img.shape)
-#   image_out = cv2.drawContours(image_out, cnts, -1, (0, 255, 0), 2)
-#   plt.imshow(image_out)
-
 cg = cv2.imread('candy_ghost.png')[:, :, ::-1]
 pg = cv2.imread('pampkin_ghost.png')[:, :, ::-1]
 sg = cv2.imread('scary_ghost.png')[:, :, ::-1]
 phone = cv2.imread('lab7.png')[:, :, ::-1]
 
 def search_point(img1, img2):
-	orb = cv2.ORB_create()
-	queryKP, queryDes = orb.detectAndCompute(img1, None)
-	trainKP, trainDes = orb.detectAndCompute(img2, None)
-	matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-	matches = matcher.match(queryDes, trainDes)
-	matches = sorted(matches, key=lambda x: x.distance)
-
-	final_img = cv2.drawMatches(img1, queryKP,
-								img2, trainKP, matches[:53], None)
-
-	good_matches = matches
-
-	query_pts = np.float32([queryKP[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-	train_pts = np.float32([trainKP[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-
-	H, _ = cv2.findHomography(query_pts, train_pts, cv2.RANSAC, 5.0)
-
-	h, w = img1.shape[:2]
-	object_corners = np.array([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32).reshape(-1, 1, 2)
-
-	s = cv2.perspectiveTransform(object_corners, H)
-
-	l = np.copy(img2)
-	img_with_object_highlighted = cv2.polylines(l, [np.int32(s)], isClosed=True, color=(0, 255, 0), thickness=2)
-
-	#final_img = cv2.resize(final_img, (1000, 650))
-	# plt.imshow(final_img)
-	# plt.show()
-	# plt.imshow(img_with_object_highlighted)
-	# plt.show()
-	return img_with_object_highlighted
+    orb = cv2.ORB_create()
+    queryKP, queryDes = orb.detectAndCompute(img1, None)
+    trainKP, trainDes = orb.detectAndCompute(img2, None)
+    matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = matcher.match(queryDes, trainDes)
+    matches = sorted(matches, key=lambda x: x.distance)
 
 
-def search_and_highlight_object(img1, img2):
-    sift = cv2.SIFT_create()
+    final_img = cv2.drawMatches(img1, queryKP, img2, trainKP, matches[:100], None)
 
-    keypoints_ghost, descriptors_ghost = sift.detectAndCompute(img1, None)
+    good_matches = matches
 
-    keypoints_scene, descriptors_scene = sift.detectAndCompute(img2, None)
+    query_pts = np.float32([queryKP[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+    train_pts = np.float32([trainKP[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
-    FLANN_INDEX_KDTREE = 1
-    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-    search_params = dict(checks=50)
-    flann = cv2.FlannBasedMatcher(index_params, search_params)
-
-    matches = flann.knnMatch(descriptors_ghost, descriptors_scene, k=2)
-
-    good_matches = []
-    for m, n in matches:
-        if m.distance < 0.5 * n.distance:
-            good_matches.append(m)
-
-    res = []
-    while len(good_matches) > 1:
-        src_pts = np.float32([keypoints_ghost[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-        dst_pts = np.float32([keypoints_scene[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-        H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
-
-        h, w = img1.shape[:2]
-        ghost_corners = np.array([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32).reshape(-1, 1, 2)
-
-        ghost_on_scene = cv2.perspectiveTransform(ghost_corners, H)
-        res.append(ghost_on_scene)
-
-        img_with_object_highlighted = img2.copy()
-        cv2.polylines(img_with_object_highlighted, [np.int32(ghost_on_scene)], isClosed=True, color=(0, 255, 0),
-                      thickness=2)
-
-        good_matches = [match for i, match in enumerate(good_matches) if mask[i][0] == 0]
-
-    img_with_object_highlighted = img2.copy
-    for ghost_on_scene in res:
-        cv2.polylines(img_with_object_highlighted, [np.int32(ghost_on_scene)], isClosed=True, color=(0, 255, 0),
-                      thickness=2)
-
-    return img_with_objects_highlighted
-
-
-def search_and_highlight_objects2(img1, img2):
-    sift = cv2.SIFT_create()
-    keypoints_ghost, descriptors_ghost = sift.detectAndCompute(img1, None)
-    keypoints_scene, descriptors_scene = sift.detectAndCompute(img2, None)
-
-    FLANN_INDEX_KDTREE = 1
-    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-    search_params = dict(checks=50)
-    flann = cv2.FlannBasedMatcher(index_params, search_params)
-
-    matches = flann.knnMatch(descriptors_ghost, descriptors_scene, k=2)
-
-    good_matches = []
-    for m, n in matches:
-        if m.distance < 0.5 * n.distance:
-            good_matches.append(m)
-
-    objects_on_scene = []  # Здесь будем хранить координаты объектов
-
-    src_pts = np.float32([keypoints_ghost[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-    dst_pts = np.float32([keypoints_scene[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-
-    H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+    H, _ = cv2.findHomography(query_pts, train_pts, cv2.RANSAC, 5.0)
 
     h, w = img1.shape[:2]
-    ghost_corners = np.array([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32).reshape(-1, 1, 2)
-    ghost_on_scene = cv2.perspectiveTransform(ghost_corners, H)
+    object_corners = np.array([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32).reshape(-1, 1, 2)
 
-    objects_on_scene.append(ghost_on_scene)
+    s = cv2.perspectiveTransform(object_corners, H)
 
-    img_with_objects_highlighted = img2.copy()
+    l = np.copy(img2)
+    img_with_object_highlighted = cv2.polylines(l, [np.int32(s)], isClosed=True, color=(0, 255, 0), thickness=2)
 
-    for ghost_on_scene in objects_on_scene:
-        cv2.polylines(img_with_objects_highlighted, [np.int32(ghost_on_scene)], isClosed=True, color=(0, 255, 0),
-                      thickness=2)
+    # final_img = cv2.resize(final_img, (1000, 650))
+    # plt.imshow(final_img)
+    # plt.show()
+    return len(matches)
+    # plt.imshow(img_with_object_highlighted)
+    # plt.show()
+    #return img_with_object_highlighted
 
-    return img_with_objects_highlighted
 
-phone = search_point(cg, phone)
-phone = search_point(pg, phone)
-phone = search_point(pg, phone)
-plt.imshow(phone)
-plt.show()
+def search_contours(img):
+    im = img.copy()
+    im = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)
+    im = cv2.GaussianBlur(im, (25,25), 0)
+    _, thresh = cv2.threshold(im, 190, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    res = img.copy()
+
+    arr = []
+
+    for i in contours:
+        if cv2.contourArea(i)>1100:
+            arr.append(i)
+    contours = arr.copy()
+
+    for i in range(len(contours)):
+        for j in range(len(contours) - i - 1):
+            if cv2.contourArea(contours[j]) > cv2.contourArea(contours[j+1]):
+                contours[j], contours[j+1] = contours[j+1], contours[j]
+
+    buf = []
+
+    for i in contours[::-1]:
+        flag = 0
+        x1,y1,w1,h1 = cv2.boundingRect(i)
+        for j in contours[::-1]:
+            x2, y2, w2, h2 = cv2.boundingRect(j)
+            if x2<x1 and y2<y1 and x2+w2 > x1+w1 and y2+h2 > y1+h1:
+                flag=1
+                break
+        if flag==0:
+            buf.append(i)
+
+    res_arr = []
+    count=0
+    for i in buf:
+        if cv2.contourArea(i)<37000:
+            x, y, w, h = cv2.boundingRect(i)
+            res_arr.append([count, (x,y,w,h)])
+            count+=1
+            #cv2.rectangle(res, (x, y), (x + w, y + h), (0, 0, 255), 5)
+            arr.append(i)
+
+    return res, res_arr
+
+def f(arr):
+    x,y,w,h = arr[3][1]
+    result = phone[y-20:y+h+20, x-20:x+w+20]
+    plt.imshow(result)
+    plt.show()
+    return result
+
+
+img, arr = search_contours(phone)
+
+#
+# f(arr)
+b=f(arr)
+
+p = search_point(pg, b)
+s = search_point(sg, b)
+c = search_point(cg, b)
+if s>p:
+    x,y,w,h = arr[3][1]
+    cv2.rectangle(img, (x-20, y-20), (x + w+20, y + h), (0, 235, 255), 5)
+
+img = cv2.resize(img, (1280, 720))
+cv2.imshow('g', img)
+
+while True:
+    cv2.waitKey(0)
